@@ -73,10 +73,22 @@ class Scraper
   
   protected
   
+  # `klass` is optional, but should respond to `call` or `parse`
   def parse_result(node, klass)
-    klass ? klass.parse(node) : node.inner_text
+    if klass
+      klass.respond_to?(:call) ? klass.call(node) : klass.parse(node)
+    else
+      node.inner_text
+    end
   end
   
+  # Rule declaration is in Hash or single argument form:
+  # 
+  #   { '//some/selector' => :name, :with => MyClass }
+  #     #=> ['//some/selector', :name, MyClass]
+  #   
+  #   :title
+  #     #=> ['title', :title, nil]
   def self.parse_rule_declaration(selector)
     if Hash === selector
       klass = selector.delete(:with)
@@ -113,11 +125,13 @@ if __FILE__ == $0
   
   class ArticleScraper < Scraper
     element 'h1' => :title
-    element 'p.pubdate' => :published
+    element 'p.pubdate' => :published, :with => lambda { |node|
+      node.inner_text.sub('Published on ', '')
+    }
     element 'a[@href]/@href' => :link
     
     def published_date
-      @date ||= Date.parse published.sub('Published on ', '')
+      @date ||= Date.parse published
     end
   end
 
@@ -152,7 +166,7 @@ if __FILE__ == $0
     it "should have title, pubdate for first article" do
       article = @blog.articles[0]
       article.title.should == 'First article'
-      article.published.should == 'Published on Oct 1'
+      article.published.should == 'Oct 1'
       article.published_date.month.should == 10
       article.published_date.day.should == 1
       article.link.should be_nil
@@ -161,7 +175,7 @@ if __FILE__ == $0
     it "should have title, link for second article" do
       article = @blog.articles[1]
       article.title.should == 'Second article'
-      article.published.should == 'Published on Sep 5'
+      article.published.should == 'Sep 5'
       article.link.should == 'http://mislav.uniqpath.com'
     end
   end
