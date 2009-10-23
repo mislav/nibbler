@@ -18,8 +18,6 @@
 #   blog.articles.first.link  # => "http://example.com"
 #
 
-require 'nokogiri'
-
 class Scraper
   attr_reader :doc
   
@@ -27,6 +25,7 @@ class Scraper
   def initialize(doc)
     @doc = case doc
       when String, IO
+        require 'nokogiri' unless defined? ::Nokogiri
         Nokogiri::HTML(doc)
       else
         doc
