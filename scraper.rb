@@ -86,16 +86,21 @@ class Scraper
     end
   end
   
-  def plural?(name)
-    self.class.plurals.include?(name)
-  end
-  
   def self.rules
     @rules ||= []
   end
   
   def self.plurals
     @plurals ||= []
+  end
+  
+  def plural?(name)
+    self.class.plurals.include?(name)
+  end
+  
+  def self.inherited(subclass)
+    subclass.rules.concat self.rules
+    subclass.plurals.concat self.plurals
   end
 end
 
@@ -104,6 +109,7 @@ end
 
 if __FILE__ == $0
   require 'spec/autorun'
+  HTML = DATA.read
   
   class ArticleScraper < Scraper
     element 'h1' => :title
@@ -121,9 +127,13 @@ if __FILE__ == $0
     elements 'div.hentry' => :articles, :with => ArticleScraper
   end
   
+  class SpecialArticleScraper < ArticleScraper
+    element 'span'
+  end
+  
   describe BlogScraper do
     before(:all) do
-      @blog = described_class.parse(DATA)
+      @blog = described_class.parse(HTML)
     end
     
     it "should have title" do
@@ -155,6 +165,26 @@ if __FILE__ == $0
       article.link.should == 'http://mislav.uniqpath.com'
     end
   end
+  
+  describe SpecialArticleScraper do
+    before(:all) do
+      doc = Nokogiri::HTML(HTML).at('//div[position()=2]')
+      @article = described_class.parse(doc)
+      @parent_article = described_class.superclass.parse(doc)
+    end
+    
+    it "should inherit title parsing from parent" do
+      @article.title.should == 'Second article'
+    end
+    
+    it "should have additional 'span' rule" do
+      @article.span.should == 'My blog'
+    end
+    
+    it "should not let superclass inherit rules" do
+      @parent_article.should_not respond_to(:span)
+    end
+  end
 end
 
 __END__
@@ -175,6 +205,6 @@ __END__
   <div class="hentry">
     <h1>Second article</h1>
     <p class="pubdate">Published on Sep 5</p>
-    <span><a href="http://mislav.uniqpath.com"></a></span>
+    <span><a href="http://mislav.uniqpath.com">My blog</a></span>
   </div>
 </body>
