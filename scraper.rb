@@ -76,8 +76,10 @@ class Scraper
   def parse_result(node, klass)
     if klass
       klass.respond_to?(:call) ? klass.call(node) : klass.parse(node)
-    else
+    elsif node.respond_to? :inner_text
       node.inner_text
+    else
+      node.to_s
     end
   end
   
