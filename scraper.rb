@@ -124,29 +124,53 @@ if __FILE__ == $0
   require 'spec/autorun'
   HTML = DATA.read
   
-  class ArticleScraper < Scraper
+  class Article < Scraper
     element 'h1' => :title
+    element 'a[@href]/@href' => :link
+  end
+  
+  class TimestampedArticle < Article
     element 'p.pubdate' => :published, :with => lambda { |node|
       node.inner_text.sub('Published on ', '')
     }
-    element 'a[@href]/@href' => :link
     
     def published_date
       @date ||= Date.parse published
     end
   end
+  
+  class SpecialArticle < Article
+    element 'span'
+  end
 
   class BlogScraper < Scraper
     element :title
     elements '#nav li' => :navigation_items
-    elements 'div.hentry' => :articles, :with => ArticleScraper
   end
   
-  class SpecialArticleScraper < ArticleScraper
-    element 'span'
+  class BlogWithArticles < BlogScraper
+    elements 'div.hentry' => :articles, :with => Article
   end
   
-  describe BlogScraper do
+  class BlogWithTimestampedArticles < BlogScraper
+    elements 'div.hentry' => :articles, :with => TimestampedArticle
+  end
+  
+  class FakeHtmlParser
+    def initialize(name)
+      @name = name
+    end
+    
+    def at(selector)
+      "fake #{@name}"
+    end
+    
+    def search(selector)
+      (1..3).map { |n| self.class.new(@name + n.to_s) }
+    end
+  end
+  
+  describe BlogWithTimestampedArticles do
     before(:all) do
       @blog = described_class.parse(HTML)
     end
@@ -181,7 +205,7 @@ if __FILE__ == $0
     end
   end
   
-  describe SpecialArticleScraper do
+  describe SpecialArticle do
     before(:all) do
       doc = Nokogiri::HTML(HTML).at('//div[position()=2]')
       @article = described_class.parse(doc)
@@ -198,6 +222,22 @@ if __FILE__ == $0
     
     it "should not let superclass inherit rules" do
       @parent_article.should_not respond_to(:span)
+    end
+  end
+  
+  describe BlogWithArticles, 'with fake HTML parser' do
+    before(:all) do
+      doc = FakeHtmlParser.new('test')
+      @blog = described_class.parse(doc)
+    end
+    
+    it "should have fake title" do
+      @blog.title.should == 'fake test'
+    end
+    
+    it "should have fake articles" do
+      titles = @blog.articles.map { |a| a.title }
+      titles.should == ['fake test1', 'fake test2', 'fake test3']
     end
   end
 end
