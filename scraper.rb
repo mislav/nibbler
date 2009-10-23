@@ -12,7 +12,7 @@
 #     elements 'div.hentry' => :articles, :with => ArticleScraper
 #   end
 #   
-#   blog = BlogScraper.scrape(html)
+#   blog = BlogScraper.parse(html)
 #   
 #   blog.title  # => "Some page title"
 #   blog.articles.first.link  # => "http://example.com"
@@ -39,8 +39,8 @@ class Scraper
   end
   
   # Initialize a new scraper and process data
-  def self.scrape(html)
-    new(html).scrape
+  def self.parse(html)
+    new(html).parse
   end
   
   # Specify a new singular scraping rule
@@ -58,14 +58,14 @@ class Scraper
   end
   
   # Let it do its thing!
-  def scrape
+  def parse
     self.class.rules.each do |selector, target, klass|
       if plural? target
         @doc.search(selector).each do |node|
-          send(target) << scrape_result(node, klass)
+          send(target) << parse_result(node, klass)
         end
       elsif node = @doc.at(selector)
-        send("#{target}=", scrape_result(node, klass))
+        send("#{target}=", parse_result(node, klass))
       end
     end
     self
@@ -73,8 +73,8 @@ class Scraper
   
   protected
   
-  def scrape_result(node, klass)
-    klass ? klass.scrape(node) : node.inner_text
+  def parse_result(node, klass)
+    klass ? klass.parse(node) : node.inner_text
   end
   
   def self.parse_rule_declaration(selector)
@@ -123,7 +123,7 @@ if __FILE__ == $0
   
   describe BlogScraper do
     before(:all) do
-      @blog = described_class.scrape(DATA)
+      @blog = described_class.parse(DATA)
     end
     
     it "should have title" do
