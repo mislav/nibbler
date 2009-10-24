@@ -21,20 +21,10 @@
 class Scraper
   attr_reader :doc
   
-  # Accepts string, open file, or Nokogiri document instance
+  # Accepts string, open file, or Nokogiri-like document
   def initialize(doc)
-    @doc = case doc
-      when String, IO
-        require 'nokogiri' unless defined? ::Nokogiri
-        Nokogiri::HTML(doc)
-      else
-        doc
-      end
-    
-    # initialize plural accessor values
-    self.class.rules.each do |name, (s, k, plural)|
-      send("#{name}=", []) if plural
-    end
+    @doc = self.class.convert_document(doc)
+    initialize_plural_accessors
   end
   
   # Initialize a new scraper and process data
@@ -108,6 +98,21 @@ class Scraper
   
   def self.inherited(subclass)
     subclass.rules.update self.rules
+  end
+  
+  def initialize_plural_accessors
+    self.class.rules.each do |name, (s, k, plural)|
+      send("#{name}=", []) if plural
+    end
+  end
+  
+  def self.convert_document(doc)
+    if String === doc or IO === doc or %w[Tempfile StringIO].include? doc.class.name
+      require 'nokogiri' unless defined? ::Nokogiri
+      Nokogiri::HTML(doc)
+    else
+      doc
+    end
   end
 end
 
