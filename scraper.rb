@@ -44,8 +44,8 @@ class Scraper
   
   # Specify a new singular scraping rule
   def self.element(selector)
-    selector, name, klass = parse_rule_declaration(selector)
-    rules[name] = [selector, klass]
+    selector, name, delegate = parse_rule_declaration(selector)
+    rules[name] = [selector, delegate]
     attr_accessor name
     name
   end
@@ -58,13 +58,13 @@ class Scraper
   
   # Let it do its thing!
   def parse
-    self.class.rules.each do |target, (selector, klass, plural)|
+    self.class.rules.each do |target, (selector, delegate, plural)|
       if plural
         @doc.search(selector).each do |node|
-          send(target) << parse_result(node, klass)
+          send(target) << parse_result(node, delegate)
         end
       elsif node = @doc.at(selector)
-        send("#{target}=", parse_result(node, klass))
+        send("#{target}=", parse_result(node, delegate))
       end
     end
     self
@@ -72,10 +72,10 @@ class Scraper
   
   protected
   
-  # `klass` is optional, but should respond to `call` or `parse`
-  def parse_result(node, klass)
-    if klass
-      klass.respond_to?(:call) ? klass.call(node) : klass.parse(node)
+  # `delegate` is optional, but should respond to `call` or `parse`
+  def parse_result(node, delegate)
+    if delegate
+      delegate.respond_to?(:call) ? delegate.call(node) : delegate.parse(node)
     elsif node.respond_to? :inner_text
       node.inner_text
     else
@@ -92,8 +92,8 @@ class Scraper
   #     #=> ['title', :title, nil]
   def self.parse_rule_declaration(selector)
     if Hash === selector
-      klass = selector.delete(:with)
-      selector.to_a.flatten << klass
+      delegate = selector.delete(:with)
+      selector.to_a.flatten << delegate
     else
       [selector.to_s, selector.to_sym, nil]
     end
