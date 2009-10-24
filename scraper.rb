@@ -32,9 +32,9 @@ class Scraper
       end
     
     # initialize plural accessor values
-    self.class.plurals.each { |name|
-      send("#{name}=", [])
-    }
+    self.class.rules.each do |name, (s, k, plural)|
+      send("#{name}=", []) if plural
+    end
   end
   
   # Initialize a new scraper and process data
@@ -45,7 +45,7 @@ class Scraper
   # Specify a new singular scraping rule
   def self.element(selector)
     selector, name, klass = parse_rule_declaration(selector)
-    rules << [selector, name, klass]
+    rules[name] = [selector, klass]
     attr_accessor name
     name
   end
@@ -53,13 +53,13 @@ class Scraper
   # Specify a new plural scraping rule
   def self.elements(selector)
     name = element(selector)
-    plurals << name
+    rules[name] << true
   end
   
   # Let it do its thing!
   def parse
-    self.class.rules.each do |selector, target, klass|
-      if plural? target
+    self.class.rules.each do |target, (selector, klass, plural)|
+      if plural
         @doc.search(selector).each do |node|
           send(target) << parse_result(node, klass)
         end
@@ -100,20 +100,11 @@ class Scraper
   end
   
   def self.rules
-    @rules ||= []
-  end
-  
-  def self.plurals
-    @plurals ||= []
-  end
-  
-  def plural?(name)
-    self.class.plurals.include?(name)
+    @rules ||= {}
   end
   
   def self.inherited(subclass)
-    subclass.rules.concat self.rules
-    subclass.plurals.concat self.plurals
+    subclass.rules.update self.rules
   end
 end
 
@@ -146,6 +137,11 @@ if __FILE__ == $0
   class BlogScraper < Scraper
     element :title
     elements '#nav li' => :navigation_items
+  end
+  
+  class OverrideBlogScraper < BlogScraper
+    elements :title
+    element '#nav li' => :navigation_items
   end
   
   class BlogWithArticles < BlogScraper
@@ -238,6 +234,20 @@ if __FILE__ == $0
     it "should have fake articles" do
       titles = @blog.articles.map { |a| a.title }
       titles.should == ['fake test1', 'fake test2', 'fake test3']
+    end
+  end
+  
+  describe OverrideBlogScraper do
+    before(:all) do
+      @blog = described_class.parse(HTML)
+    end
+    
+    it "should have plural titles" do
+      @blog.title.should == ['Maximum awesome']
+    end
+    
+    it "should have singular navigation item" do
+      @blog.navigation_items.should == 'Home'
     end
   end
 end
