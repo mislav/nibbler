@@ -125,7 +125,7 @@ if __FILE__ == $0
   
   class Article < Scraper
     element 'h1' => :title
-    element 'a[@href]/@href' => :link
+    element 'a/@href' => :link
   end
   
   class TimestampedArticle < Article
@@ -217,7 +217,7 @@ if __FILE__ == $0
   
   describe SpecialArticle do
     before(:all) do
-      doc = Nokogiri::HTML(HTML).at('//div[position()=2]')
+      doc = Nokogiri::HTML(HTML).at('//div[2]')
       @article = described_class.parse(doc)
       @parent_article = described_class.superclass.parse(doc)
     end
