@@ -1,22 +1,4 @@
 ## A minimalistic, declarative HTML scraper
-#
-# Example:
-#
-#   class ArticleScraper < Scraper
-#     element 'h1' => :title
-#     element 'a[@href]/@href' => :link
-#   end
-#   
-#   class BlogScraper < Scraper
-#     element :title
-#     elements 'div.hentry' => :articles, :with => ArticleScraper
-#   end
-#   
-#   blog = BlogScraper.parse(html)
-#   
-#   blog.title  # => "Some page title"
-#   blog.articles.first.link  # => "http://example.com"
-#
 
 class Scraper
   attr_reader :doc
