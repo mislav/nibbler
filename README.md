@@ -26,6 +26,10 @@ Scraper
     blog.articles.first.url
     #=> "http://example.com/article"
 
+There are sample scripts in the "examples/" directory; run them with:
+
+    ruby -rubygems examples/<script>.rb
+
 [See the wiki][wiki] for more on how to use *Scraper*.
 
 Requirements
