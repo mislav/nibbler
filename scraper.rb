@@ -15,16 +15,16 @@ class Scraper
   end
   
   # Specify a new singular scraping rule
-  def self.element(selector, &block)
-    selector, name, delegate = parse_rule_declaration(selector, &block)
+  def self.element(*args, &block)
+    selector, name, delegate = parse_rule_declaration(*args, &block)
     rules[name] = [selector, delegate]
     attr_accessor name
     name
   end
   
   # Specify a new plural scraping rule
-  def self.elements(selector, &block)
-    name = element(selector, &block)
+  def self.elements(*args, &block)
+    name = element(*args, &block)
     rules[name] << true
   end
   
@@ -62,16 +62,14 @@ class Scraper
   #   
   #   :title
   #     #=> ['title', :title, nil]
-  def self.parse_rule_declaration(selector, &block)
-    if Hash === selector
-      delegate = selector.delete(:with)
-      selector, name = selector.to_a.flatten
-    else
-      selector, name, delegate = selector.to_s, selector.to_sym, nil
-    end
+  def self.parse_rule_declaration(*args, &block)
+    options, name = Hash === args.last ? args.pop : {}, args.first
+    delegate = options.delete(:with)
+    selector, property = name ? [name.to_s, name.to_sym] : options.to_a.flatten
+    raise ArgumentError, "invalid rule declaration: #{args.inspect}" unless property
     # eval block in context of a new scraper subclass
     delegate = Class.new(delegate || Scraper, &block) if block_given?
-    return selector, name, delegate
+    return selector, property, delegate
   end
   
   def self.rules
