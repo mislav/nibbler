@@ -43,16 +43,16 @@ class Scraper
   end
   
   # Specify a new singular scraping rule
-  def self.element(selector)
-    selector, name, delegate = parse_rule_declaration(selector)
+  def self.element(selector, &block)
+    selector, name, delegate = parse_rule_declaration(selector, &block)
     rules[name] = [selector, delegate]
     attr_accessor name
     name
   end
   
   # Specify a new plural scraping rule
-  def self.elements(selector)
-    name = element(selector)
+  def self.elements(selector, &block)
+    name = element(selector, &block)
     rules[name] << true
   end
   
@@ -90,13 +90,16 @@ class Scraper
   #   
   #   :title
   #     #=> ['title', :title, nil]
-  def self.parse_rule_declaration(selector)
+  def self.parse_rule_declaration(selector, &block)
     if Hash === selector
       delegate = selector.delete(:with)
-      selector.to_a.flatten << delegate
+      selector, name = selector.to_a.flatten
     else
-      [selector.to_s, selector.to_sym, nil]
+      selector, name, delegate = selector.to_s, selector.to_sym, nil
     end
+    # eval block in context of a new scraper subclass
+    delegate = Class.new(delegate || Scraper, &block) if block_given?
+    return selector, name, delegate
   end
   
   def self.rules
@@ -150,6 +153,12 @@ if __FILE__ == $0
   
   class BlogWithTimestampedArticles < BlogScraper
     elements 'div.hentry' => :articles, :with => TimestampedArticle
+  end
+  
+  class BlogWithArticlesBlock < BlogScraper
+    elements 'div.hentry' => :articles do
+      element 'h1' => :title
+    end
   end
   
   class FakeHtmlParser
@@ -248,6 +257,17 @@ if __FILE__ == $0
     
     it "should have singular navigation item" do
       @blog.navigation_items.should == 'Home'
+    end
+  end
+  
+  describe BlogWithArticlesBlock do
+    before(:all) do
+      @blog = described_class.parse(HTML)
+    end
+    
+    it "should have article objects" do
+      titles = @blog.articles.map { |article| article.title }
+      titles.should == ['First article', 'Second article']
     end
   end
 end
