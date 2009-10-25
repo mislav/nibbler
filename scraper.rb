@@ -55,10 +55,20 @@ class Scraper
     end
   end
   
+  private
+  
+  def self.rules
+    @rules ||= {}
+  end
+  
+  def self.inherited(subclass)
+    subclass.rules.update self.rules
+  end
+  
   # Rule declaration is in Hash or single argument form:
   # 
-  #   { '//some/selector' => :name, :with => MyClass }
-  #     #=> ['//some/selector', :name, MyClass]
+  #   { '//some/selector' => :name, :with => delegate }
+  #     #=> ['//some/selector', :name, delegate]
   #   
   #   :title
   #     #=> ['title', :title, nil]
@@ -70,14 +80,6 @@ class Scraper
     # eval block in context of a new scraper subclass
     delegate = Class.new(delegate || Scraper, &block) if block_given?
     return selector, property, delegate
-  end
-  
-  def self.rules
-    @rules ||= {}
-  end
-  
-  def self.inherited(subclass)
-    subclass.rules.update self.rules
   end
   
   def initialize_plural_accessors
