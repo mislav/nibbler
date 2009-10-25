@@ -37,10 +37,6 @@ end
 
 # now here's the real deal
 class Twitter < JsonScraper
-  def self.convert_document(doc)
-    String === doc ? JsonDocument.new(doc) : doc
-  end
-  
   elements :tweets, :with => JsonScraper do
     element :created_at
     element :text
