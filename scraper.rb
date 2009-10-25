@@ -89,7 +89,7 @@ class Scraper
   end
   
   def self.convert_document(doc)
-    if String === doc or IO === doc or %w[Tempfile StringIO].include? doc.class.name
+    unless doc.respond_to?(:at) && doc.respond_to?(:search)
       require 'nokogiri' unless defined? ::Nokogiri
       Nokogiri doc
     else
