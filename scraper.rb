@@ -91,7 +91,7 @@ class Scraper
   def self.convert_document(doc)
     if String === doc or IO === doc or %w[Tempfile StringIO].include? doc.class.name
       require 'nokogiri' unless defined? ::Nokogiri
-      Nokogiri::HTML(doc)
+      Nokogiri doc
     else
       doc
     end
@@ -260,6 +260,7 @@ if __FILE__ == $0
 end
 
 __END__
+<!doctype html>
 <title>Maximum awesome</title>
 
 <body>
