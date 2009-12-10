@@ -35,8 +35,8 @@ class Scraper
         @doc.search(selector).each do |node|
           send(target) << parse_result(node, delegate)
         end
-      elsif node = @doc.at(selector)
-        send("#{target}=", parse_result(node, delegate))
+      else
+        send("#{target}=", parse_result(@doc.at(selector), delegate))
       end
     end
     self
@@ -52,7 +52,7 @@ class Scraper
       node.inner_text
     else
       node.to_s
-    end
+    end unless node.nil?
   end
   
   private
@@ -194,6 +194,14 @@ if __FILE__ == $0
       article.title.should == 'Second article'
       article.published.should == 'Sep 5'
       article.link.should == 'http://mislav.uniqpath.com'
+    end
+    
+    it "should override singular properties when re-parsing" do
+      blog = @blog.dup
+      blog.instance_variable_set('@doc', Nokogiri::HTML(''))
+      blog.parse
+      blog.title.should be_nil
+      blog.should have(2).articles
     end
   end
   
