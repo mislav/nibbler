@@ -28,7 +28,8 @@ Nibbler
 
 There are sample scripts in the "examples/" directory; run them with:
 
-    ruby -Ilib -rubygems examples/<script>.rb
+    ruby -Ilib -rubygems examples/delicious.rb
+    ruby -Ilib -rubygems examples/tweetburner.rb > output.csv
 
 [See the wiki][wiki] for more on how to use *Nibbler*.
 

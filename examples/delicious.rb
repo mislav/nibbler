@@ -16,7 +16,7 @@ class Bookmark < Nibbler
   element './/h4/a/@href' => :url
   
   # tags are plural
-  elements 'ul.tag-chain li span' => :tags
+  elements 'ul.tag-chain .tagItem' => :tags
   
   # dates are in form "22 OCT 09"
   element '.dateGroup span' => :date, :with => lambda { |span|

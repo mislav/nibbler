@@ -25,7 +25,7 @@ end
 twitter = Twitter.parse(DATA.read)
 
 twitter.tweets.each do |tweet|
-  puts "@%s: %s" % [tweet.author.username, tweet.created_at.inspect]
+  puts "@%s: %s [%s]" % [tweet.author.username, tweet.text, tweet.created_at]
   puts 
 end
 
