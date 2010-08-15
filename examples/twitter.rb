@@ -5,43 +5,17 @@
 #
 # Requirements: a JSON library (tested with "json" gem)
 
-require 'scraper'
+require 'nibbler/json'
 require 'json'
 require 'time'
 
-# a wrapper for JSON data that provides `at` and `search`
-class JsonDocument
-  def initialize(obj)
-    @data = String === obj ? JSON.parse(obj) : obj
-  end
-  
-  def self.[](obj)
-    self.class === obj ? obj : new(obj)
-  end
-  
-  def search(selector)
-    @data.to_a
-  end
-  
-  def at(selector)
-    @data[selector]
-  end
-end
-
-# a scraper that works with JsonDocument
-class JsonScraper < Scraper
-  def self.convert_document(doc)
-    JsonDocument[doc]
-  end
-end
-
 # now here's the real deal
-class Twitter < JsonScraper
-  elements :tweets, :with => JsonScraper do
-    element :created_at
+class Twitter < NibblerJSON
+  elements :tweets, :with => NibblerJSON do
+    element :created_at, :with => lambda { |time| Time.parse(time) }
     element :text
     element :id
-    element 'user' => :author, :with => JsonScraper do
+    element 'user' => :author, :with => NibblerJSON do
       element 'name' => :full_name
       element 'screen_name' => :username
     end
@@ -51,7 +25,7 @@ end
 twitter = Twitter.parse(DATA.read)
 
 twitter.tweets.each do |tweet|
-  puts "@%s: %s" % [tweet.author.username, tweet.text]
+  puts "@%s: %s" % [tweet.author.username, tweet.created_at.inspect]
   puts 
 end
 
