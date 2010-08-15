@@ -1,6 +1,6 @@
 ## A minimalistic, declarative HTML scraper
 
-class Scraper
+class Nibbler
   attr_reader :doc
   
   # Accepts string, open file, or Nokogiri-like document
@@ -78,7 +78,7 @@ class Scraper
     selector, property = name ? [name.to_s, name.to_sym] : options.to_a.flatten
     raise ArgumentError, "invalid rule declaration: #{args.inspect}" unless property
     # eval block in context of a new scraper subclass
-    delegate = Class.new(delegate || Scraper, &block) if block_given?
+    delegate = Class.new(delegate || Nibbler, &block) if block_given?
     return selector, property, delegate
   end
   
@@ -105,7 +105,7 @@ if __FILE__ == $0
   require 'spec/autorun'
   HTML = DATA.read
   
-  class Article < Scraper
+  class Article < Nibbler
     element 'h1' => :title
     element 'a/@href' => :link
   end
@@ -124,7 +124,7 @@ if __FILE__ == $0
     element 'span'
   end
 
-  class BlogScraper < Scraper
+  class BlogScraper < Nibbler
     element :title
     elements '#nav li' => :navigation_items
   end

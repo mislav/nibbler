@@ -3,7 +3,7 @@
 # I needed to dump my Tweetburner archive to CSV
 # http://tweetburner.com/users/mislav/archive
 
-require 'scraper'
+require 'nibbler'
 require 'uri'
 require 'open-uri'
 require 'date'
@@ -13,7 +13,7 @@ require 'csv'
 module Tweetburner
   SITE = URI('http://tweetburner.com')
   
-  class Scraper < ::Scraper
+  class Scraper < ::Nibbler
     # add our behavior to convert_document; open web pages with UTF-8 encoding
     def self.convert_document(url)
       URI === url ? Nokogiri::HTML::Document.parse(open(url), url.to_s, 'UTF-8') : url
@@ -24,7 +24,7 @@ module Tweetburner
   end
   
   # a single link (table row one the archive page)
-  class Link < ::Scraper
+  class Link < ::Nibbler
     element './/a[starts-with(@href, "/links/")]/@href' => :stats_url, :with => lambda { |href|
       SITE + href.text
     }

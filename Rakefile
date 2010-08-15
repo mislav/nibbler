@@ -2,12 +2,12 @@ task :default => :spec
 
 desc %(Run specs)
 task :spec do
-  exec %(ruby -rubygems scraper.rb --color)
+  exec %(ruby -Ilib -rubygems lib/nibbler.rb --color)
 end
 
 desc %(Count lines of code in implementation)
 task :loc do
-  File.open('scraper.rb') do |file|
+  File.open('lib/nibbler.rb') do |file|
     loc, counting = 1, false
     
     file.each_line do |line|

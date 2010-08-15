@@ -3,12 +3,12 @@
 # Let's pretend that delicious.com doesn't have an API.
 # This is a demonstration of the most common use-case.
 
-require 'scraper'
+require 'nibbler'
 require 'open-uri'
 require 'date'
 
 # extracts data from a single bookmark
-class Bookmark < Scraper
+class Bookmark < Nibbler
   element 'h4 a' => :title
   element '.description' => :description
   
@@ -25,7 +25,7 @@ class Bookmark < Scraper
 end
 
 # finds all bookmarks on the page
-class Delicious < Scraper
+class Delicious < Nibbler
   elements '#bookmarklist div.bookmark' => :bookmarks, :with => Bookmark
 end
 

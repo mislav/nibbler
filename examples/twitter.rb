@@ -1,7 +1,7 @@
 ## JSON data extraction example
 #
 # This is an example how we're not limited to Nokogiri and HTML screen-scraping.
-# Here we use Scraper to extract tweets from a Twitter API JSON response.
+# Here we use Nibbler to extract tweets from a Twitter API JSON response.
 #
 # Requirements: a JSON library (tested with "json" gem)
 
