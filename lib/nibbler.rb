@@ -1,20 +1,8 @@
-## A minimalistic, declarative HTML scraper
-
+# A minimalistic, declarative HTML scraper
 class Nibbler
   attr_reader :doc
   
-  # Accepts string, open file, or Nokogiri-like document
-  def initialize(doc)
-    @doc = self.class.convert_document(doc)
-    initialize_plural_accessors
-  end
-  
-  # Initialize a new scraper and process data
-  def self.parse(html)
-    new(html).parse
-  end
-  
-  # Specify a new singular scraping rule
+  # Declare a singular scraping rule
   def self.element(*args, &block)
     selector, name, delegate = parse_rule_declaration(*args, &block)
     rules[name] = [selector, delegate]
@@ -22,19 +10,27 @@ class Nibbler
     name
   end
   
-  # Specify a new plural scraping rule
+  # Declare a plural scraping rule
   def self.elements(*args, &block)
     name = element(*args, &block)
     rules[name] << true
   end
   
-  # Let it do its thing!
+  # Process data by creating a new scraper
+  def self.parse(data) new(data).parse end
+  
+  # Initialize the parser with raw data or a document
+  def initialize(data)
+    @doc = self.class.convert_document(data)
+    # initialize plural properties
+    self.class.rules.each { |name, (s, k, plural)| send("#{name}=", []) if plural }
+  end
+  
+  # Parse the document and save values returned by selectors
   def parse
     self.class.rules.each do |target, (selector, delegate, plural)|
       if plural
-        @doc.search(selector).each do |node|
-          send(target) << parse_result(node, delegate)
-        end
+        send(target).concat @doc.search(selector).map { |i| parse_result(i, delegate) }
       else
         send("#{target}=", parse_result(@doc.at(selector), delegate))
       end
@@ -42,13 +38,14 @@ class Nibbler
     self
   end
   
+  # Dump the extracted data into a hash with symbolized keys
   def to_hash
     converter = lambda { |obj| obj.respond_to?(:to_hash) ? obj.to_hash : obj }
-    self.class.rules.keys.inject({}) { |hash, name|
+    self.class.rules.keys.inject({}) do |hash, name|
       value = send(name)
       hash[name.to_sym] = Array === value ? value.map(&converter) : converter[value]
       hash
-    }
+    end
   end
   
   protected
@@ -66,18 +63,20 @@ class Nibbler
   
   private
   
+  # Parsing rules declared with `element` or `elements`
   def self.rules
     @rules ||= {}
   end
   
+  # Make subclasses inherit the parsing rules
   def self.inherited(subclass)
     subclass.rules.update self.rules
   end
   
-  # Rule declaration is in Hash or single argument form:
+  # Rule declaration forms:
   # 
-  #   { '//some/selector' => :name, :with => delegate }
-  #     #=> ['//some/selector', :name, delegate]
+  #   { 'selector' => :property, :with => delegate }
+  #     #=> ['selector', :property, delegate]
   #   
   #   :title
   #     #=> ['title', :title, nil]
@@ -91,18 +90,12 @@ class Nibbler
     return selector, property, delegate
   end
   
-  def initialize_plural_accessors
-    self.class.rules.each do |name, (s, k, plural)|
-      send("#{name}=", []) if plural
-    end
-  end
-  
+  # Parse data with Nokogiri unless it's already an acceptable document
   def self.convert_document(doc)
-    unless doc.respond_to?(:at) && doc.respond_to?(:search)
+    if doc.respond_to?(:at) and doc.respond_to?(:search) then doc
+    else
       require 'nokogiri' unless defined? ::Nokogiri
       Nokogiri doc
-    else
-      doc
     end
   end
 end

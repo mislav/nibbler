@@ -1,4 +1,4 @@
-task :default => :spec
+task :default => [:loc, :spec]
 
 desc %(Run specs)
 task :spec do
@@ -13,12 +13,12 @@ task :loc do
     file.each_line do |line|
       case line
       when /^class\b/   then counting = true
-      when /^\s*(#|\Z)/ then next
+      when /^\s*(#|$)/ then next
       when /^end\b/     then break
       end
       loc += 1 if counting
     end
     
-    puts loc
+    puts "#{loc} lines of code"
   end
 end
