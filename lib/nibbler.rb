@@ -42,6 +42,15 @@ class Nibbler
     self
   end
   
+  def to_hash
+    converter = lambda { |obj| obj.respond_to?(:to_hash) ? obj.to_hash : obj }
+    self.class.rules.keys.inject({}) { |hash, name|
+      value = send(name)
+      hash[name.to_sym] = Array === value ? value.map(&converter) : converter[value]
+      hash
+    }
+  end
+  
   protected
   
   # `delegate` is optional, but should respond to `call` or `parse`
@@ -178,6 +187,16 @@ if __FILE__ == $0
     it "should have navigation items" do
       @blog.should have(3).navigation_items
       @blog.navigation_items.should == %w[Home About Help]
+    end
+    
+    it "should convert to hash" do
+      hash = @blog.to_hash
+      hash[:navigation_items].should == %w[Home About Help]
+      hash[:title].should == "Maximum awesome"
+      article = hash[:articles].first
+      article[:title] == "First article"
+      article.key?(:link).should be_true
+      article[:link].should be_nil
     end
     
     it "should have title, pubdate for first article" do
