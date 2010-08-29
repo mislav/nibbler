@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |gem|
   gem.name    = 'nibbler'
-  gem.version = '1.0'
+  gem.version = '1.1.0'
   gem.date    = Time.now.strftime('%Y-%m-%d')
 
   gem.add_development_dependency 'yajl-ruby', '~> 0.7.5'
