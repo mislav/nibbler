@@ -104,7 +104,7 @@ end
 ## specs
 
 if __FILE__ == $0
-  require 'spec/autorun'
+  require 'rspec'
   HTML = DATA.read
   
   class Article < Nibbler
