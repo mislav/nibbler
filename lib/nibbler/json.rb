@@ -2,6 +2,8 @@ require 'nibbler'
 
 # a wrapper for JSON data that provides `at` and `search`
 class Nibbler::JsonDocument
+  attr_reader :data
+  
   def initialize(obj)
     @data = String === obj ? JSON.parse(obj) : obj
   end
@@ -11,11 +13,11 @@ class Nibbler::JsonDocument
   end
   
   def search(selector)
-    @data.to_a
+    Array === data ? data : at(selector)
   end
   
   def at(selector)
-    @data[selector]
+    data[selector]
   end
 end
 
