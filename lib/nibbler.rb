@@ -57,7 +57,7 @@ class Nibbler
     elsif node.respond_to? :inner_text
       node.inner_text
     else
-      node.to_s
+      node
     end unless node.nil?
   end
   
