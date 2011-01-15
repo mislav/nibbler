@@ -13,7 +13,7 @@ class Nibbler::JsonDocument
   end
   
   def search(selector)
-    Array === data ? data : at(selector)
+    Array === data ? data : Array(at(selector))
   end
   
   def at(selector)
