@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |gem|
   gem.name    = 'nibbler'
-  gem.version = '1.2.0'
+  gem.version = '1.2.1'
   gem.date    = Time.now.strftime('%Y-%m-%d')
 
   gem.summary = "A cute HTML scraper / data extraction tool"
