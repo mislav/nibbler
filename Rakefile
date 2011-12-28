@@ -2,7 +2,11 @@ task :default => [:loc, :spec]
 
 desc %(Run specs)
 task :spec do
-  exec %(ruby -Ilib -rubygems lib/nibbler.rb --color)
+  tests = []
+  tests << %(ruby -Ilib -rubygems lib/nibbler.rb --color)
+  tests << %(ruby -Ilib -rubygems lib/nibbler/json.rb)
+
+  exit(1) if tests.any? {|cmd| !sh(cmd) }
 end
 
 desc %(Count lines of code in implementation)
