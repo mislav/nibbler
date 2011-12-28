@@ -11,11 +11,11 @@ require 'time'
 
 # now here's the real deal
 class Twitter < NibblerJSON
-  elements :tweets, :with => NibblerJSON do
+  elements :tweets do
     element :created_at, :with => lambda { |time| Time.parse(time) }
     element :text
     element :id
-    element 'user' => :author, :with => NibblerJSON do
+    element 'user' => :author do
       element 'name' => :full_name
       element 'screen_name' => :username
     end

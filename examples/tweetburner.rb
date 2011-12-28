@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 ## Tweetburner.com archive dump
 #
 # I needed to dump my Tweetburner archive to CSV
@@ -14,8 +16,15 @@ module Tweetburner
   SITE = URI('http://tweetburner.com')
   
   class Scraper < ::Nibbler
-    # add our behavior to convert_document; open web pages with UTF-8 encoding
-    def self.convert_document(url)
+    def initialize url
+      doc = get_document url
+      super doc
+    end
+
+    private
+
+    # open web pages with UTF-8 encoding
+    def get_document(url)
       URI === url ? Nokogiri::HTML::Document.parse(open(url), url.to_s, 'UTF-8') : url
     rescue OpenURI::HTTPError
       $stderr.puts "ERROR opening #{url}"
@@ -31,7 +40,7 @@ module Tweetburner
     element '.col-tweet-text' => :text, :with => lambda { |node|
       node.text.sub(/\s+– .+?$/, '')
     }
-    element '.col-clicks' => :clicks
+    element '.col-clicks' => :clicks, :with => lambda { |node| node.inner_text.to_i }
     element '.col-created-at' => :created_at, :with => lambda { |node| DateTime.parse node.text }
     
     def stats
@@ -58,18 +67,18 @@ module Tweetburner
     def parse
       super
       if next_page_url
-        @doc = self.class.convert_document(URI(next_page_url))
+        @doc = get_document(URI(next_page_url))
         self.parse
-      else
-        self
       end
+      self
     end
     
     def to_csv(io = STDOUT)
       io.sync = true if io == STDOUT
-      csv = CSV::Writer.create io
-      links.each do |link|
-        csv << [link.text, link.clicks, link.created_at, link.stats.destination]
+      CSV(io) do |csv|
+        links.each do |link|
+          csv << [link.text, link.clicks, link.created_at, link.stats.destination]
+        end
       end
     end
   end
