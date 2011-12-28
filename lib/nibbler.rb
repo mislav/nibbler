@@ -1,105 +1,131 @@
-# A minimalistic, declarative HTML scraper
-class Nibbler
-  attr_reader :doc
-  
+# DSL for defining data extraction rules from an abstract document object
+module NibblerMethods
+  def self.extended(base)
+    base.send(:include, InstanceMethods) if base.is_a? Class
+  end
+
   # Declare a singular scraping rule
-  def self.element(*args, &block)
+  def element(*args, &block)
     selector, name, delegate = parse_rule_declaration(*args, &block)
     rules[name] = [selector, delegate]
     attr_accessor name
     name
   end
-  
+
   # Declare a plural scraping rule
-  def self.elements(*args, &block)
+  def elements(*args, &block)
     name = element(*args, &block)
     rules[name] << true
   end
-  
-  # Process data by creating a new scraper
-  def self.parse(data) new(data).parse end
-  
-  # Initialize the parser with raw data or a document
-  def initialize(data)
-    @doc = self.class.convert_document(data)
-    # initialize plural properties
-    self.class.rules.each { |name, (s, k, plural)| send("#{name}=", []) if plural }
-  end
-  
-  # Parse the document and save values returned by selectors
-  def parse
-    self.class.rules.each do |target, (selector, delegate, plural)|
-      if plural
-        send(target).concat @doc.search(selector).map { |i| parse_result(i, delegate) }
-      else
-        send("#{target}=", parse_result(@doc.at(selector), delegate))
-      end
-    end
-    self
-  end
-  
-  # Dump the extracted data into a hash with symbolized keys
-  def to_hash
-    converter = lambda { |obj| obj.respond_to?(:to_hash) ? obj.to_hash : obj }
-    self.class.rules.keys.inject({}) do |hash, name|
-      value = send(name)
-      hash[name.to_sym] = Array === value ? value.map(&converter) : converter[value]
-      hash
-    end
-  end
-  
-  protected
-  
-  # `delegate` is optional, but should respond to `call` or `parse`
-  def parse_result(node, delegate)
-    if delegate
-      delegate.respond_to?(:call) ? delegate.call(node) : delegate.parse(node)
-    elsif node.respond_to? :inner_text
-      node.inner_text
-    else
-      node
-    end unless node.nil?
-  end
-  
-  private
-  
+
   # Parsing rules declared with `element` or `elements`
-  def self.rules
+  def rules
     @rules ||= {}
   end
-  
+
+  # Process data by creating a new instance
+  def parse(doc) new(doc).parse end
+
+  private
+
   # Make subclasses inherit the parsing rules
-  def self.inherited(subclass)
+  def inherited(subclass)
+    super
     subclass.rules.update self.rules
   end
-  
+
   # Rule declaration forms:
-  # 
+  #
   #   { 'selector' => :property, :with => delegate }
   #     #=> ['selector', :property, delegate]
-  #   
+  #
   #   :title
   #     #=> ['title', :title, nil]
-  def self.parse_rule_declaration(*args, &block)
+  def parse_rule_declaration(*args, &block)
     options, name = Hash === args.last ? args.pop : {}, args.first
     delegate = options.delete(:with)
     selector, property = name ? [name.to_s, name.to_sym] : options.to_a.flatten
     raise ArgumentError, "invalid rule declaration: #{args.inspect}" unless property
     # eval block in context of a new scraper subclass
-    delegate = Class.new(delegate || Nibbler, &block) if block_given?
+    delegate = Class.new(delegate || base_parser_class, &block) if block_given?
     return selector, property, delegate
   end
-  
-  # Parse data with Nokogiri unless it's already an acceptable document
-  def self.convert_document(doc)
-    if doc.respond_to?(:at) and doc.respond_to?(:search) then doc
-    else
-      require 'nokogiri' unless defined? ::Nokogiri
-      Nokogiri doc
+
+  def base_parser_class
+    klass = self
+    klass = klass.superclass until klass.superclass == Object
+    klass
+  end
+
+  module InstanceMethods
+    attr_reader :doc
+
+    # Initialize the parser with a document
+    def initialize(doc)
+      @doc = doc
+      # initialize plural properties
+      self.class.rules.each { |name, (s, k, plural)| send("#{name}=", []) if plural }
+    end
+
+    # Parse the document and save values returned by selectors
+    def parse
+      self.class.rules.each do |target, (selector, delegate, plural)|
+        if plural
+          send(target).concat @doc.search(selector).map { |i| parse_result(i, delegate) }
+        else
+          send("#{target}=", parse_result(@doc.at(selector), delegate))
+        end
+      end
+      self
+    end
+
+    # Dump the extracted data into a hash with symbolized keys
+    def to_hash
+      converter = lambda { |obj| obj.respond_to?(:to_hash) ? obj.to_hash : obj }
+      self.class.rules.keys.inject({}) do |hash, name|
+        value = send(name)
+        hash[name.to_sym] = Array === value ? value.map(&converter) : converter[value]
+        hash
+      end
+    end
+
+    protected
+
+    # `delegate` is optional, but should respond to `call` or `parse`
+    def parse_result(node, delegate)
+      if delegate
+        method = delegate.is_a?(Proc) ? delegate : delegate.method(delegate.respond_to?(:call) ? :call : :parse)
+        method.arity == 1 ? method[node] : method[node, self]
+      else
+        node
+      end unless node.nil?
     end
   end
 end
 
+# An HTML/XML scraper
+class Nibbler
+  extend NibblerMethods
+
+  # Parse data with Nokogiri unless it's already an acceptable document
+  def initialize(doc)
+    unless doc.respond_to?(:at) and doc.respond_to?(:search)
+      require 'nokogiri' unless defined? ::Nokogiri
+      doc = Nokogiri doc
+    end
+    super(doc)
+  end
+
+  protected
+
+  def parse_result(node, delegate)
+    if !delegate and node.respond_to? :inner_text
+      node.inner_text
+    else
+      super
+    end
+  end
+end
 
 ## specs
 

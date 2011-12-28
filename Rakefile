@@ -12,9 +12,9 @@ task :loc do
     
     file.each_line do |line|
       case line
-      when /^class\b/   then counting = true
+      when /^(class|module)\b/ then counting = true
       when /^\s*(#|$)/ then next
-      when /^end\b/     then break
+      when /^end\b/ then break
       end
       loc += 1 if counting
     end
